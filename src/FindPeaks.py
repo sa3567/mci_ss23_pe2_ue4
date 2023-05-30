@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 import math
+import sys
 ##import matplotlib as mp
 ##from scipy.signal import argrelextrema
 
@@ -156,11 +157,6 @@ class FindPeaks:
         self.df_peaks["Vert. distance to Baseline"] = _delta_base_list
 
         print(self.df_peaks.head())
-
-        #self.df_raw[self.scan_col].plot(figsize=(20,8))
-        #self.df_raw.iloc[_rbase_list + _lbase_list][self.scan_col].plot(style='.', lw=10, color='green', marker="^")
-        #_peak_indices = self.df_peaks.index.values.tolist()
-        #self.df_raw.iloc[_peak_indices][self.scan_col].plot(style='.', lw=10, color='red', marker="v")
         pass
     
 
@@ -182,7 +178,7 @@ class FindPeaks:
 
             plt.plot([_xl, _xr], [_yl, _yr], color='m', linestyle='--', linewidth=1)
             plt.plot([_x, _x], [_y, _y - _delta_base], color='m', linestyle='--', linewidth=1)
-
+           
 
 
         self.df_raw[self.scan_col].plot(figsize=(20,8))
@@ -204,27 +200,4 @@ myPeaks.add_baseline()
 myPeaks.plotPeaks()
 
 plt.show(block = True)
-
-
-
-## Anlegen einer Zeitreihe der Herzfrequenz aus den EKG-Daten
-
-#%% UC 2.3 Analysieren der Daten auf Abbruch-Kriterium
-
-## Vergleich der Maximalen Herzfrequenz mit Alter des Patienten
-
-#%% UC 2.4 Erstellen einer Zusammenfassung
-
-## Ausgabe einer Zusammenfassung
-
-#%% UC 2.5 Visualisierung der Daten
-
-## Erstellung eines Plots
-
-#%% UC 2.6 Manuelle Eingabe eines Abbruchkritierums
-
-## Abfrage an Nutzer:in, ob Abgebrochen werden soll
-
-#%% UC 2.7 Speichern der Daten
-
-# Speichern der Daten
+sys.exit(0)
