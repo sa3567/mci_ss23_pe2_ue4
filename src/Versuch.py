@@ -1,191 +1,270 @@
-import os
-import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
-import seaborn as sns
+import matplotlib.pyplot as plt
+import sys
+#from scipy.signal import argrelextrema
 
-class FindPeaks:
-    def __init__(self):
-        self.scan_col = 0
-        self.time_col = 0
-        self.baselines = pd.DataFrame()
-        self.df_peaks = pd.DataFrame()
-        self.df_raw = pd.DataFrame()
 
-    def importData(self, a_file_name):
-        if not os.path.exists(a_file_name):
-            print("File name not valid!")
-            return
+class EKGdata:
 
-        self.df_raw = pd.read_csv(a_file_name, sep=";", header=None)
-        if self.df_raw.empty:
-            print("Data file is empty!")
-            return
+    def __init__(self, path):
+        '''Create the DataFrame'''
+        columns = ["amplitude [mV]" ,"time [ms]"]
+        self.df_ekg = pd.read_csv(path, sep="\t", header=0, names= columns)       
+    
+    def find_peaks(self):        
+        '''Method for Detecting Peaks'''
 
-        print(self.df_raw.head())
+        #Splitting the columns in seperate lists 
+        np_array_amplitude = self.df_ekg["amplitude [mV]"].values
+        np_array_time = self.df_ekg["time [ms]"].values
 
-    def detectPeaks(self, a_column=0):
-        self.scan_col = a_column
-        self.time_col = 1
+        peaks = []
+        peak_times =[]
+        
+        for index in range(1,len(np_array_amplitude)-1):
+            #print("The index is:", index, and the value is np_array_amplitude[index])
+            preview = np_array_amplitude[index-1]
+            next = np_array_amplitude[index+1]
+            current = np_array_amplitude[index]
 
-        _indices = []
-        _up = -1
-        _curr = 0
-        _prev = self.df_raw.iloc[0][self.scan_col]
+            if current > next and current > preview: # For each element in the list, define the previous and next element using indexing 
 
-        for i in range(1, len(self.df_raw[self.scan_col])):
-            _curr = self.df_raw.iloc[i][self.scan_col]
-            _prev = self.df_raw.iloc[i - 1][self.scan_col]
+                peaks.append(index)
+                peak_times.append(np_array_time[index])
 
-            if _curr > _prev:
-                _up = i
+        self.df_peaks = pd.DataFrame({"indices":peaks,"time [ms]":peak_times})
+    
+    def peaks_information(self):
+            '''calling the methods for distance, height and amplitude'''
+            self.distance_to_peak()
+            self.highest_point_of_peak()
+            self.height_of_peak()
 
-            if (_up > -1) and (_curr < _prev):
-                _indices.append(_up)
-                _up = -1
+    def distance_to_peak(self):
+            
+            '''calculating distance between the peaks'''
 
-        self.df_peaks = pd.DataFrame(_indices, columns=["Indices"])
-        self.df_peaks.set_index("Indices", inplace=True)
-        self.df_peaks["Value"] = self.df_raw.iloc[_indices][self.scan_col]
+            #Important: Insert zeros to account for later indexing (filter them out later)
+            
+            distance_after =[0]
+            distance_before =[0]
 
-        print(self.df_peaks.head())
+            all_distances = [0]
+            list_boxplot = []
 
-        _prev = 0
-        _curr = 0
-        _next = 0
-        _deltaPrev = []
-        _deltaNext = []
+            for index in self.df_peaks.index:
 
-        for i in range(0, len(_indices)):
-            _curr = self.df_raw.iloc[_indices[i]][self.time_col]
-            if i != 0:
-                _prev = self.df_raw.iloc[_indices[i - 1]][self.time_col]
+                if index > 0 and index < len(self.df_peaks)-1:
+                    curr_time = self.df_peaks.iloc[index]["time [ms]"]
+                    before_time = self.df_peaks.iloc[index-1]["time [ms]"]
+                    next_time = self.df_peaks.iloc[index+1]["time [ms]"]
+                    
+                #Difference to peak before
+                    before = curr_time - before_time
+                    distance_before.append(before)
+                    all_distances.append(before)
+
+                #Differences to peak after  
+                    next = next_time - curr_time
+                    distance_after.append(next)
+                    all_distances.append(next)
+
+            distance_after.append(0)
+            distance_before.append(0)
+            all_distances.append(0)
+
+            print(distance_after)
+            print(distance_before)
+            self.df_peaks ["distance to prev peak [ms]"] = distance_before
+            self.df_peaks ["distance to next peak [ms]"] = distance_after        
+        
+        
+        # visualize differences to peak before
+            boxplot_before = plt.boxplot(distance_before)
+            plt.title("Difference to peak before", fontsize=12, fontweight='bold')
+            plt.show()
+
+        # visualize differences to peak after
+            boxplot_after = plt.boxplot(distance_after)
+            plt.title("Difference to peak after", fontsize=12, fontweight='bold') 
+            plt.show()
+
+        #overall distribution
+            boxplot_all = plt.boxplot(all_distances)
+            plt.title("Overall distribution of the differences between peaks", fontsize=12, fontweight='bold')
+            plt.show()
+        
+
+        #deleting the zeros from row 49-52
+            for distance in distance_after:
+                 if distance != 0:
+                      list_boxplot.append(distance)
+
+            for distance in distance_before:
+                 if distance != 0:
+                      list_boxplot.append(distance)
+
+            boxplot_distances = plt.boxplot(list_boxplot)
+            plt.suptitle("Distribution of Distances", fontsize=12, fontweight='bold')
+            plt.title ("Boxplot without the disorting zeros", fontsize=12)
+            plt.show()
+            
+    def boxplot(self):
+        '''creating boxplots for previous and next distances'''
+        
+        #previous Distances
+        plt.boxplot(self.df_peaks["Distance to prev peak [ms]"])
+        plt.title("Distance to the previous peak [ms]", fontsize=12, fontweight='bold')
+        plt.show()
+
+        # Next Distances
+        plt.boxplot(self.df_peaks["Distance to next peak [ms]"])
+        plt.title("Distance to the next peak [ms]", fontsize=12, fontweight='bold') 
+        plt.show()
+
+    def highest_point_of_peak(self):
+        '''calculate the highest point of a peak'''
+
+        np_array_amplitude = self.df_ekg["amplitude [mV]"].values
+        peak_values = []
+
+        for index in range(1, len(np_array_amplitude) - 1):
+        
+            preview = np_array_amplitude[index - 1]
+            next = np_array_amplitude[index + 1]
+            current = np_array_amplitude[index]
+
+            if current > next and current > preview:
+                peak_values.append(np_array_amplitude[index])
+        
+        self.df_peaks["Peak values"] = peak_values
+
+        # visualize the peaks in a histogram
+        histogram_peaks = plt.hist(peak_values)
+        plt.title("Histogram of the peaks", fontsize=12, fontweight='bold')
+        plt.xlabel("Value [mV]")
+        plt.ylabel("Number of peaks")
+        plt.yticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        plt.show()
+
+    
+    def histogram(self):
+        '''create method for the histogram'''
+        plt.hist(self.df_peaks["Peak values"])
+        plt.title("Histogram of the peaks",  fontsize=12, fontweight='bold')
+        plt.xlabel("Value of peaks [mV]")
+        plt.ylabel("Number of peaks")
+        plt.yticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        plt.show()
+
+    
+    def height_of_peak(self):
+         '''calculate peak to peak'''
+         
+    
+    def baseline(self):        
+        np_array_amplitude = self.df_ekg["amplitude [mV]"].values
+        np_array_time = self.df_ekg["time [ms]"].values
+
+        bases = []
+        base_times =[]
+        base_values=[]
+
+        for index in range(1,len(np_array_amplitude)-1):
+            preview = np_array_amplitude[index-1]
+            next = np_array_amplitude[index+1]
+            current = np_array_amplitude[index]
+
+            if current < next and current < preview:
+                bases.append(index)
+                base_times.append(np_array_time[index])
+                base_values.append(np_array_amplitude[index])
+
+        print (bases)
+        print (base_times)
+        print (base_values)
+        self.base_times = base_times
+        self.df_lows = pd.DataFrame({"Low values":base_values,"time [ms]":base_times})   
+    
+    def find_bases(self): 
+
+        peak_times = self.df_peaks["time [ms]"]
+        peak_values= self.df_peaks["Peak values"]
+
+        for peak_time in peak_times:
+
+            if peak_time in peak_times < max(self.base_times):
+                index_larger= next(x[0] for x in enumerate(self.base_times) if x[1] > peak_time)
             else:
-                _prev = _curr
+                index_larger = None
 
-            if i < len(_indices) - 1:
-                _next = self.df_raw.iloc[_indices[i + 1]][self.time_col]
+            index_larger
+            
+            print (peak_values)
+
+            list_copy= self.base_times.copy()
+            print(list_copy.reverse()) #reverse the whole list
+
+            if peak_time > max(list_copy):
+                index_reverse= next(x[0] for x in enumerate(list_copy) if x[1] < peak_time)
+                index_smaller= (len(list_copy)-1) - index_reverse
+                print(index_smaller)
             else:
-                _next = _curr
+                index_smaller = None
+                print(index_smaller)
 
-            _deltaPrev.append(_curr - _prev)
-            _deltaNext.append(_next - _curr)
+            '''Jetzt sollte die Baseline berechnet werden,
+            dann die Differenz zu den jeweilig dazwischen liegenden Peaks
+            und dann das in eine Liste gebracht'''
 
-        self.df_peaks["Next Peak"] = _deltaNext
-        self.df_peaks["Previous Peak"] = _deltaPrev
+        #baseline = (base_values[index_larger] base_values[index_smaller])/2
+          
+    def estimate_hr(self):
+        '''calculate heartrate'''
+       
+        self.heat_rate = None
+        #every second peak is important
+        R_Wave = my_peakfinder.df_peaks.size / 2
+        #f = 100Hz
+        minutes = my_peakfinder.df_ekg.size / 1000 / 60
 
-        print(self.df_peaks.head())
+        self.heat_rate  = R_Wave / minutes
+        
+    
+    def plot_time_series(self):
+        '''creating a lineplot for data'''
 
-    def add_baseline(self):
-        self.baselines = pd.DataFrame(columns=[])
-        _peak_indices = self.df_peaks.index.values.tolist()
-        _rbase_list = []
-        _lbase_list = []
-        _delta_base_list = []
+        # Same like above, but now with subplots() 
+        self.fig, self.ax = plt.subplots()
+        self.ax.plot(self.df_ekg["Time in [ms]"], self.df_ekg["Amplitude in [mV]"])
+        self.ax.set_xlabel("Zeit in ms")
+        self.ax.set_ylabel("Spannung in mV")
+        self.ax.plot(self.df_peaks["Time in ms"],self.df_peaks["Peak values"], marker ='.')
+        
 
-        for i in range(0, len(_peak_indices)):
-            _step = _peak_indices[i]
-            _curr = 0
-            _next = 0
-            while _step < 2 + len(self.df_raw[self.scan_col]):
-                _curr = self.df_raw.iloc[_step][self.scan_col]
-                _next = self.df_raw.iloc[_step + 1][self.scan_col]
-                if _next > _curr:
-                    _rbase_list.append(_step)
-                    break
-                _step += 1
+my_peakfinder = EKGdata(r"data\01_Ruhe_short.txt")
+my_peakfinder.df_ekg
+#my_peakfinder.plot_time_series()
+#my_peakfinder.fig
+my_peakfinder.find_peaks()
+my_peakfinder.df_peaks
+#my_peakfinder.estimate_hr()
+#my_peakfinder.heat_rate
+my_peakfinder.distance_to_peak()
+my_peakfinder.highest_point_of_peak()
+#my_peakfinder.df_peaks
+my_peakfinder.df_peaks
+# %%
+my_peakfinder.distance_to_peak()
+my_peakfinder.highest_point_of_peak()
+my_peakfinder.baseline()
+my_peakfinder.find_bases()
 
-            _step = _peak_indices[i]
-            while _step > 0:
-                _curr = self.df_raw.iloc[_step][self.scan_col]
-                _next = self.df_raw.iloc[_step - 1][self.scan_col]
-                if _next > _curr:
-                    _lbase_list.append(_step)
-                    break
-                _step -= 1
+my_peakfinder.histogram()
+my_peakfinder.highest_point_of_peak()
+my_peakfinder.distance_to_peak()
+my_peakfinder.boxplot()
+my_peakfinder.plot_time_series()
 
-            _x = _peak_indices[i]
-            _y = self.df_raw.iloc[_peak_indices[i]][self.scan_col]
-            _xl = _lbase_list[i]
-            _yl = self.df_raw.iloc[_lbase_list[i]][self.scan_col]
-            _xr = _rbase_list[i]
-            _yr = self.df_raw.iloc[_rbase_list[i]][self.scan_col]
+sys.exit(0)
 
-            _dbx = _xl - _xr
-            _dby = _yl - _yr
-
-            _dpy = _y - _yl
-            _dpx = _x - _xl
-
-            _delta_base = _dpy - _dpx * (_dby / _dbx)
-            _delta_base_list.append(_delta_base)
-
-        self.df_peaks["Left Base"] = _lbase_list
-        self.df_peaks["Right Base"] = _rbase_list
-        self.df_peaks["Vert. distance to Baseline"] = _delta_base_list
-
-        print(self.df_peaks.head())
-
-    def plotPeaks(self):
-        _peak_indices = self.df_peaks.index.values.tolist()
-
-        # Convert peak indices to integers
-        _peak_indices = [int(idx) for idx in _peak_indices]
-
-        # Calculate time differences to previous and next peaks in milliseconds
-        prev_peak_times = self.df_raw.iloc[np.array(_peak_indices) - 1][self.time_col]
-        next_peak_times = self.df_raw.iloc[np.array(_peak_indices) + 1][self.time_col]
-        peak_diffs_prev = self.df_raw.iloc[_peak_indices][self.time_col] - prev_peak_times
-        peak_diffs_next = next_peak_times - self.df_raw.iloc[_peak_indices][self.time_col]
-
-        self.df_peaks["Time Diff Prev (ms)"] = peak_diffs_prev * 1000
-        self.df_peaks["Time Diff Next (ms)"] = peak_diffs_next * 1000
-
-        for idx, row in self.df_peaks.iterrows():
-            _x = idx
-            _y = self.df_raw.iloc[_x][self.scan_col]
-
-            _xl = row["Left Base"]
-            _yl = self.df_raw.loc[_xl][self.scan_col]
-
-            _xr = row["Right Base"]
-            _yr = self.df_raw.loc[_xr][self.scan_col]
-
-            _delta_base = row["Vert. distance to Baseline"]
-
-            plt.plot([_xl, _xr], [_yl, _yr], color='m', linestyle='--', linewidth=1)
-            plt.plot([_x, _x], [_y, _y - _delta_base], color='m', linestyle='--', linewidth=1)
-
-        self.df_raw[self.scan_col].plot(figsize=(20, 8))
-        self.df_raw.iloc[_peak_indices][self.scan_col].plot(style='.', lw=10, color='red', marker="v")
-        plt.xlabel("Time")
-        plt.ylabel("Amplitude")
-        plt.title("Peaks in Data")
-
-        # Plot histogram of peak distances
-        distances = self.df_peaks["Next Peak"] - self.df_peaks["Previous Peak"]
-        plt.figure(figsize=(10, 4))
-        plt.hist(distances, bins=20, color='b', alpha=0.7)
-        plt.xlabel("Peak Distance")
-        plt.ylabel("Frequency")
-        plt.title("Histogram of Peak Distances")
-
-        # Plot boxplot of peak time differences
-        #plt.figure(figsize=(8, 4))
-        #sns.boxplot(data=self.df_peaks[["Time Diff Prev (ms)", "Time Diff Next (ms)"]])
-        #plt.ylabel("Time Difference (ms)")
-        #plt.title("Boxplot of Peak Time Differences")
-
-        plt.show(block=True)
-
-
-script_dir = os.path.dirname(__file__)  # absolute dir the script is in
-rel_path = "../data/"  # relative path of the .csv file
-file1 = "test.csv"
-abs_file_path = os.path.join(script_dir, rel_path, file1)
-
-myPeaks = FindPeaks()
-myPeaks.importData(abs_file_path)
-myPeaks.detectPeaks(0)
-myPeaks.add_baseline()
-myPeaks.plotPeaks()
