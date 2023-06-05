@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import sys
 #from scipy.signal import argrelextrema
 
-
 class EKGdata:
 
     def __init__(self, path):
@@ -113,13 +112,13 @@ class EKGdata:
         '''creating boxplots for previous and next distances'''
         
         #previous Distances
-        plt.boxplot(self.df_peaks["Distance to prev peak [ms]"])
-        plt.title("Distance to the previous peak [ms]", fontsize=12, fontweight='bold')
+        plt.boxplot(self.df_peaks["distance to prev peak [ms]"])
+        plt.title("distance to the previous peak [ms]", fontsize=12, fontweight='bold')
         plt.show()
 
         # Next Distances
-        plt.boxplot(self.df_peaks["Distance to next peak [ms]"])
-        plt.title("Distance to the next peak [ms]", fontsize=12, fontweight='bold') 
+        plt.boxplot(self.df_peaks["distance to next peak [ms]"])
+        plt.title("distance to the next peak [ms]", fontsize=12, fontweight='bold') 
         plt.show()
 
     def highest_point_of_peak(self):
@@ -137,7 +136,7 @@ class EKGdata:
             if current > next and current > preview:
                 peak_values.append(np_array_amplitude[index])
         
-        self.df_peaks["Peak values"] = peak_values
+        self.df_peaks["peak values"] = peak_values
 
         # visualize the peaks in a histogram
         histogram_peaks = plt.hist(peak_values)
@@ -150,7 +149,7 @@ class EKGdata:
     
     def histogram(self):
         '''create method for the histogram'''
-        plt.hist(self.df_peaks["Peak values"])
+        plt.hist(self.df_peaks["peak values"])
         plt.title("Histogram of the peaks",  fontsize=12, fontweight='bold')
         plt.xlabel("Value of peaks [mV]")
         plt.ylabel("Number of peaks")
@@ -189,7 +188,7 @@ class EKGdata:
     def find_bases(self): 
 
         peak_times = self.df_peaks["time [ms]"]
-        peak_values= self.df_peaks["Peak values"]
+        peak_values= self.df_peaks["peak values"]
 
         for peak_time in peak_times:
 
@@ -213,12 +212,6 @@ class EKGdata:
                 index_smaller = None
                 print(index_smaller)
 
-            '''Jetzt sollte die Baseline berechnet werden,
-            dann die Differenz zu den jeweilig dazwischen liegenden Peaks
-            und dann das in eine Liste gebracht'''
-
-        #baseline = (base_values[index_larger] base_values[index_smaller])/2
-          
     def estimate_hr(self):
         '''calculate heartrate'''
        
@@ -236,10 +229,10 @@ class EKGdata:
 
         # Same like above, but now with subplots() 
         self.fig, self.ax = plt.subplots()
-        self.ax.plot(self.df_ekg["Time in [ms]"], self.df_ekg["Amplitude in [mV]"])
+        self.ax.plot(self.df_ekg["time [ms]"], self.df_ekg["amplitude [mV]"])
         self.ax.set_xlabel("Zeit in ms")
         self.ax.set_ylabel("Spannung in mV")
-        self.ax.plot(self.df_peaks["Time in ms"],self.df_peaks["Peak values"], marker ='.')
+        self.ax.plot(self.df_peaks["time [ms]"],self.df_peaks["peak values"], marker ='.')
         
 
 my_peakfinder = EKGdata(r"data\01_Ruhe_short.txt")
@@ -247,22 +240,14 @@ my_peakfinder.df_ekg
 #my_peakfinder.plot_time_series()
 #my_peakfinder.fig
 my_peakfinder.find_peaks()
-my_peakfinder.df_peaks
 #my_peakfinder.estimate_hr()
 #my_peakfinder.heat_rate
 my_peakfinder.distance_to_peak()
 my_peakfinder.highest_point_of_peak()
-#my_peakfinder.df_peaks
 my_peakfinder.df_peaks
-# %%
-my_peakfinder.distance_to_peak()
-my_peakfinder.highest_point_of_peak()
 my_peakfinder.baseline()
 my_peakfinder.find_bases()
-
 my_peakfinder.histogram()
-my_peakfinder.highest_point_of_peak()
-my_peakfinder.distance_to_peak()
 my_peakfinder.boxplot()
 my_peakfinder.plot_time_series()
 
