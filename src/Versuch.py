@@ -241,7 +241,7 @@ class EKGdata:
         
 my_peakfinder = EKGdata(r"data\01_Ruhe_short.txt")
 my_peakfinder.df_ekg
-#my_peakfinder.plot_time_series()
+#my_peakfinder.plot_time_series()s
 #my_peakfinder.fig
 my_peakfinder.find_peaks()
 #my_peakfinder.estimate_hr()
