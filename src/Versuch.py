@@ -227,14 +227,18 @@ class EKGdata:
     def plot_time_series(self):
         '''creating a lineplot for data'''
 
-        # Same like above, but now with subplots() 
+
         self.fig, self.ax = plt.subplots()
         self.ax.plot(self.df_ekg["time [ms]"], self.df_ekg["amplitude [mV]"])
-        self.ax.set_xlabel("Zeit in ms")
-        self.ax.set_ylabel("Spannung in mV")
-        self.ax.plot(self.df_peaks["time [ms]"],self.df_peaks["peak values"], marker ='.')
-        
+        self.ax.set_xlabel("time [ms]]")
+        self.ax.set_ylabel("Voltage [mV]")
+        #self.ax.plot(self.df_peaks["time [ms]"],self.df_peaks["peak values"], marker ='x')
+        #plt.show()
 
+        self.ax.scatter(self.df_peaks["time [ms]"], self.df_peaks["peak values"], marker="x", color="red")
+        plt.show()
+
+        
 my_peakfinder = EKGdata(r"data\01_Ruhe_short.txt")
 my_peakfinder.df_ekg
 #my_peakfinder.plot_time_series()
@@ -247,7 +251,6 @@ my_peakfinder.highest_point_of_peak()
 my_peakfinder.df_peaks
 my_peakfinder.baseline()
 my_peakfinder.find_bases()
-my_peakfinder.histogram()
 my_peakfinder.boxplot()
 my_peakfinder.plot_time_series()
 
