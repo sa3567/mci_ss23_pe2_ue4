@@ -255,4 +255,3 @@ my_peakfinder.boxplot()
 my_peakfinder.plot_time_series()
 
 sys.exit(0)
-
